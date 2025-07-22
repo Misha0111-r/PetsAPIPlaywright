@@ -1,32 +1,26 @@
 import pytest
 from playwright.sync_api import APIRequestContext
+
+from clients.client import Client
 from config import LoginPageConfig
-from models.pet_models import LoginModel, LoginResponseModel
+from models.pet_models import LoginModel, LoginRegisterResponseModel, LoginRegisterNegativeResponseModel
 
 
 @pytest.mark.api
-def test_login(api_request_context: APIRequestContext) -> None:
-    request = LoginModel(email=LoginPageConfig.EMAIL, password=LoginPageConfig.PASSWORD)
-    new_login = api_request_context.post(f"/login", data=request.model_dump())
-    assert new_login.ok
-    response = new_login.json()
-    print(response)
-    expected_model = LoginResponseModel(email='Aboba')
-    print(expected_model.model_validate(response))
+@pytest.mark.positive
+class TestLoginPage:
 
+    def test_login(self, api_request_context: APIRequestContext) -> None:
+        request = LoginModel(email=LoginPageConfig.EMAIL, password=LoginPageConfig.PASSWORD)
+        expected_model = LoginRegisterResponseModel(email=LoginPageConfig.EMAIL)
+        Client().login(api_request_context ,request, expected_model)
 
-# @pytest.mark.api
-# def test_should_create_feature_request(api_request_context: APIRequestContext) -> None:
-#     data = {
-#         "title": "[Feature] request 1",
-#         "body": "Feature description",
-#     }
-#     new_issue = api_request_context.post(f"/repos/{GITHUB_USER}/{GITHUB_REPO}/issues", data=data)
-#     assert new_issue.ok
-#
-#     issues = api_request_context.get(f"/repos/{GITHUB_USER}/{GITHUB_REPO}/issues")
-#     assert issues.ok
-#     issues_response = issues.json()
-#     issue = list(filter(lambda issue: issue["title"] == "[Feature] request 1", issues_response))[0]
-#     assert issue
-#     assert issue["body"] == "Feature description"
+@pytest.mark.api
+@pytest.mark.negative
+class TestLoginPageNegative:
+
+    @pytest.mark.parametrize('password', ['', '123'])
+    def test_login_incorrect_password(self, api_request_context, password):
+        request = LoginModel(email=LoginPageConfig.EMAIL, password=password)
+        expected_model = LoginRegisterNegativeResponseModel(detail='Username is taken or pass issue')
+        Client().login(api_request_context, request, expected_model, 400)

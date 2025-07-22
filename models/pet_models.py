@@ -7,11 +7,19 @@ class LoginModel(BaseModel):
     password: str
 
 
-class LoginResponseModel(BaseModel):
+class LoginRegisterResponseModel(BaseModel):
     token: Optional[str] = None
     email: Optional[str] = None
     id: Optional[int] = None
 
+class LoginRegisterNegativeResponseModel(BaseModel):
+    detail: str
+
+
+class RegisterModel(BaseModel):
+    email: str
+    password: str
+    confirm_password: str
 
 class PostPetModel(BaseModel):
     pet_id: int = 0

@@ -1,29 +1,24 @@
-import allure
-import requests
+from typing import Union
 
-from allure_helper import AllureHelper
-from config import LoginPageConfig
-from models.pet_models import LoginModel, LoginResponseModel, PostPetModel, GeneralResponseModel, UpdatePetModel, \
-    AddCommentModel, GetResponseModel
+import allure
+from models.pet_models import LoginModel, LoginRegisterResponseModel, PostPetModel, GeneralResponseModel, \
+    UpdatePetModel, \
+    AddCommentModel, GetResponseModel, LoginRegisterNegativeResponseModel, RegisterModel
+from playwright.sync_api import APIRequestContext
 
 
 class ClientApi:
     def __init__(self):
         self.base_url = 'http://34.141.58.52:8000/'
-        self.session = self._initialize_session()
-
-    @staticmethod
-    def _initialize_session():
-        return requests.Session()
-
-    def request(self, method: str, url: str, json, headers: dict={}):
-        response = self.session.request(method=method, url=self.base_url+url, json=json, headers=headers)
-        AllureHelper().enrich_allure(response)
-        return response
 
     @staticmethod
     def validate_model(response, expected_model, status_code):
-        assert status_code == response.status_code
+        assert response.status == status_code
+        for i in expected_model:
+            if i[1] is None:
+                continue
+            else:
+                assert i[1] == response.json()[i[0]]
         return expected_model.model_validate(response.json())
 
 
@@ -32,29 +27,34 @@ class Client(ClientApi):
         super().__init__()
 
     @allure.step('POST /login')
-    def login(self, request: LoginModel, expected_model: LoginResponseModel, status_code: int = 200):
-        response = self.request(method='post', url='login', json=request.model_dump())
-        return self.validate_model(response, expected_model, status_code), response.json()
+    def login(self, api_request_context: APIRequestContext, request: LoginModel, expected_model: Union[LoginRegisterResponseModel, LoginRegisterNegativeResponseModel], status_code: int = 200):
+        response = api_request_context.post(f"/login", data=request.model_dump())
+        return self.validate_model(response, expected_model, status_code)
 
     @allure.step('POST /pet')
-    def post_pet(self, login, request: PostPetModel, expected_model: GeneralResponseModel, status_code: int = 200):
+    def post_pet(self, api_request_context: APIRequestContext, login, request: PostPetModel, expected_model: GeneralResponseModel, status_code: int = 200):
         headers = {'Authorization': f'Bearer {login["token"]}'}
-        response = self.request(method='post', url='pet', json=request.model_dump(), headers=headers)
+        response = api_request_context.post(f"/pet", data=request.model_dump(), headers=headers)
         return self.validate_model(response, expected_model, status_code)
 
     @allure.step('PATCH /pet')
-    def update_pet_info(self, login, request: UpdatePetModel, expected_model: GeneralResponseModel, status_code: int = 200):
+    def update_pet_info(self, api_request_context: APIRequestContext, login, request: UpdatePetModel, expected_model: GeneralResponseModel, status_code: int = 200):
         headers = {'Authorization': f'Bearer {login["token"]}'}
-        response = self.request(method='post', url='pet', json=request.model_dump(), headers=headers)
+        response = api_request_context.patch(f"/pet", data=request.model_dump(), headers=headers)
         return self.validate_model(response, expected_model, status_code)
 
     @allure.step('PUT /pet/id/comment')
-    def add_comment(self, login, request: AddCommentModel, expected_model: GeneralResponseModel, status_code: int = 200):
+    def add_comment(self, api_request_context: APIRequestContext, login, request: AddCommentModel, expected_model: GeneralResponseModel, status_code: int = 200):
         headers = {'Authorization': f'Bearer {login["token"]}'}
-        response = self.request(method='put', url=f'pet/{request.pet_id}/comment', json=request.model_dump(), headers=headers)
+        response = api_request_context.put(f"/pet/{request.pet_id}/comment", data=request.model_dump(), headers=headers)
         return self.validate_model(response, expected_model, status_code)
 
     @allure.step('GET /pet/id')
-    def get_pet(self, pet_id: int, expected_model: GetResponseModel, status_code: int = 200):
-        response = self.request(method='get', url=f'pet/{pet_id}', json=None)
+    def get_pet(self, api_request_context: APIRequestContext, pet_id: int, expected_model: GetResponseModel, status_code: int = 200):
+        response = api_request_context.get(f"pet/{pet_id}", data=None)
+        return self.validate_model(response, expected_model, status_code)
+
+    @allure.step('POST /register')
+    def register(self, api_request_context: APIRequestContext, request: RegisterModel, expected_model: Union[LoginRegisterResponseModel, LoginRegisterNegativeResponseModel], status_code: int = 200):
+        response = api_request_context.post(f"/register", data=request.model_dump())
         return self.validate_model(response, expected_model, status_code)

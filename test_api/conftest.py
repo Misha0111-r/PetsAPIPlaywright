@@ -1,16 +1,21 @@
+import json
+
 import pytest
 from typing import Generator
 
 import pytest
 from playwright.sync_api import Playwright, APIRequestContext
 
+from clients.client import Client
+from config import LoginPageConfig
+from models.pet_models import LoginModel, LoginRegisterResponseModel
+
 
 @pytest.fixture(scope='session')
-def login():
-    # request = LoginModel(email=LoginPageConfig.EMAIL, password=LoginPageConfig.PASSWORD)
-    # response = ClientApi().request(method='post', url='login', json=request.model_dump())
-    # return response.json()
-    pass
+def login(api_request_context: APIRequestContext) -> json:
+    request = LoginModel(email=LoginPageConfig.EMAIL, password=LoginPageConfig.PASSWORD)
+    expected_model = LoginRegisterResponseModel(email=LoginPageConfig.EMAIL)
+    return Client().login(api_request_context, request, expected_model).model_dump()
 
 @pytest.fixture(scope="session")
 def api_request_context(
