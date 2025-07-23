@@ -12,10 +12,10 @@ class ClientApi:
     def __init__(self):
         self.base_url = 'http://34.141.58.52:8000/'
 
-    def validate_model(self, response, expected_model, status_code):
+    @staticmethod
+    def validate_model(response, expected_model, status_code):
         assert response.status == status_code
         for i in expected_model:
-            print(type(i[1]))
             if i[1] is None or isinstance(i[1], BaseModel):
                 continue
             else:
