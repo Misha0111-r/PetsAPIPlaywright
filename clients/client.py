@@ -5,17 +5,18 @@ from models.pet_models import LoginModel, LoginRegisterResponseModel, PostPetMod
     UpdatePetModel, \
     AddCommentModel, GetResponseModel, LoginRegisterNegativeResponseModel, RegisterModel
 from playwright.sync_api import APIRequestContext
+from pydantic import BaseModel
 
 
 class ClientApi:
     def __init__(self):
         self.base_url = 'http://34.141.58.52:8000/'
 
-    @staticmethod
-    def validate_model(response, expected_model, status_code):
+    def validate_model(self, response, expected_model, status_code):
         assert response.status == status_code
         for i in expected_model:
-            if i[1] is None:
+            print(type(i[1]))
+            if i[1] is None or isinstance(i[1], BaseModel):
                 continue
             else:
                 assert i[1] == response.json()[i[0]]

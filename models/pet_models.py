@@ -72,5 +72,3 @@ class CommentResponseModel(BaseModel):
 class GetResponseModel(BaseModel):
     pet: PetResponseModel
     comments: Optional[list[CommentResponseModel]] = None
-
-
